@@ -67,16 +67,8 @@ Proyecto_Chatbot/
 - **Proyecto_final_PLN (2).ipynb:** notebook principal del proyecto.
 - **Base_Reservas...xlsx:** información utilizada para la gestión de reservas.
 - **Especificaciones...pdf:** documento de referencia con reglas y condiciones del sistema.
+- - **Proyecto_final_PLN_(1).json:** workflow de n8n. 
 
-## Ejecución
-
-1. Clonar el repositorio.
-2. Abrir el notebook `Proyecto_final_PLN (2).ipynb` en Jupyter Notebook, JupyterLab o Google Colab.
-3. Configurar las credenciales o claves de servicios externos cuando sean necesarias.
-4. Configurar el flujo correspondiente en n8n.
-5. Si se ejecuta un servicio local, utilizar ngrok para exponer el endpoint requerido.
-
-> **Nota:** no se deben publicar claves de API, tokens ni credenciales dentro del repositorio. Se recomienda usar variables de entorno o archivos `.env` excluidos mediante `.gitignore`.
 
 ## Mejoras recomendadas
 
