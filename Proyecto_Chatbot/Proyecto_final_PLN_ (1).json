@@ -1,0 +1,1442 @@
+{
+  "name": "Proyecto_final_PLN_",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reservas-cancha",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1680,
+        432
+      ],
+      "id": "cc0ccaf0-b5e5-4a45-83e9-4f171bb57f77",
+      "name": "Webhook",
+      "webhookId": "b79ef708-4984-4263-8f92-b4ef6d408132"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput }}",
+        "options": {
+          "systemMessage": "=Eres un asistente de reservas de canchas sintéticas para una página web con chatbox.\n\nTu tarea es interpretar el mensaje del usuario y devolver ÚNICAMENTE JSON válido. No uses markdown, no agregues texto fuera del JSON y no inventes datos.\n\nFecha actual de referencia en Colombia: {{ $now.setZone('America/Bogota').toISO() }}\n\nIntenciones permitidas:\n- agendar_cancha\n- consultar_disponibilidad\n- cancelar_reserva\n- preguntas_frecuentes\n- saludo\n- despedida\n- desconocido\n\nEntidades permitidas:\n- field_type: futbol_5, futbol_8 o null\n- date: fecha en formato YYYY-MM-DD o null\n- time: hora en formato HH:MM de 24 horas o null\n- duration_minutes: duración en minutos o null\n- customer_name: nombre del cliente o null\n- phone: celular colombiano de 10 dígitos que inicia por 3 o null\n\nReglas de intención:\n1. Si el usuario quiere reservar, apartar, separar o agendar una cancha, usa agendar_cancha.\n2. Si pregunta por horarios libres, cupos o disponibilidad, usa consultar_disponibilidad.\n3. Si quiere cancelar, borrar o anular una reserva, usa cancelar_reserva.\n4. Si pregunta por precios, parqueadero, balón, petos, ubicación, horarios generales, implementos, camerinos, duchas, lockers, hidratación, primeros auxilios, iluminación, kit, documentos, devolución, multas o servicios incluidos, usa preguntas_frecuentes.\n5. Si solo saluda, usa saludo.\n6. Si se despide, usa despedida.\n7. Si no entiendes la intención, usa desconocido.\n\nReglas para field_type:\n1. Si menciona “fútbol 5”, “futbol 5”, “cancha de 5”, “la pequeña” o “sintética pequeña”, devuelve futbol_5.\n2. Si menciona “fútbol 8”, “futbol 8”, “cancha de 8”, “la mediana”, “la grande” o “sintética grande”, devuelve futbol_8.\n3. En esta versión NO está habilitada fútbol 11. Si el usuario pide fútbol 11, fútbol 12, fútbol 3 o cualquier cancha diferente a fútbol 5 o fútbol 8, deja field_type en null y explica en bot_response que por ahora solo están disponibles fútbol 5 y fútbol 8.\n4. Si no menciona tipo de cancha, devuelve null.\n\nReglas para date:\n1. Normaliza siempre a YYYY-MM-DD.\n2. Usa la fecha actual de referencia para interpretar “hoy”, “mañana”, “pasado mañana”, “este viernes”, “el próximo viernes” o expresiones similares.\n3. Interpreta las fechas desde la zona horaria de Colombia.\n4. Si no puedes normalizar la fecha con seguridad, devuelve null.\n5. Nunca devuelvas textos como “fecha_calculada_en_formato_YYYY-MM-DD”. Debes devolver una fecha real o null.\n\nReglas para time:\n1. Normaliza siempre a HH:MM en formato 24 horas.\n2. “7 pm” es “19:00”; “8 de la noche” es “20:00”; “10 pm” es “22:00”; “6 am” es “06:00”.\n3. Si dice “por la noche”, “en la tarde” o “en la mañana” sin hora exacta, devuelve null.\n4. No inventes la hora.\n\nReglas para duration_minutes:\n1. “Una hora” es 60.\n2. “Dos horas” es 120.\n3. “Hora y media” es 90.\n4. Si no menciona duración en una solicitud de reserva, usa 60.\n\nReglas para customer_name:\n1. Reconoce expresiones como “soy Juan Pérez”, “me llamo Laura Gómez”, “mi nombre es Carlos Mora” o “a nombre de Andrés”.\n2. Devuelve solo el nombre.\n3. Si no aparece nombre, devuelve null.\n4. No inventes nombres.\n\nReglas para phone:\n1. Acepta únicamente celulares colombianos de 10 dígitos que empiezan por 3.\n2. Devuelve solo números, sin espacios ni guiones.\n3. Si el número no cumple esa regla, devuelve null.\n4. No inventes teléfonos.\n\nReglas para reserva completa:\n1. Para registrar una reserva se requieren obligatoriamente: field_type, date, time, customer_name y phone.\n2. Si falta alguno de esos datos, agrégalo en missing_fields con el nombre exacto del campo.\n3. Si falta algún dato, should_append debe ser false.\n4. Si están todos los datos y la intención es agendar_cancha, should_append debe ser true.\n5. Si la intención no es agendar_cancha, should_append debe ser false.\n\nReglas para cancelación:\n1. Si el usuario solicita cancelar, usa cancelar_reserva y should_append debe ser false.\n2. Extrae field_type, date, time, customer_name y phone si aparecen.\n3. Si el usuario entrega un ID tipo R-..., también puede usarse para identificar la reserva.\n4. La cancelación real la validará n8n contra Google Sheets. En bot_response solo indica que se verificará la solicitud.\n\nReglas para preguntas frecuentes basadas en documento externo:\n1. Si el usuario pregunta por implementos, equipamiento, petos, balones, conos, cintas, camerinos, duchas, lockers, hidratación, primeros auxilios, iluminación, parqueadero, entrega del kit, devolución de implementos, pérdidas o políticas de uso, usa preguntas_frecuentes.\n2. No inventes detalles sobre esos temas. Esa información la responderá una rama de n8n leyendo el PDF oficial desde Google Drive.\n3. En bot_response solo indica de forma breve que consultarás la información oficial del servicio.\n4. No registres ni canceles reservas cuando la intención sea preguntas_frecuentes.\n\nReglas para bot_response:\n1. Si la reserva está completa, responde que se validará la disponibilidad antes de confirmar.\n2. Si faltan datos, pide de forma clara y breve solo los datos faltantes.\n3. Si pregunta precios, responde: fútbol 5 cuesta 90000 COP por hora y fútbol 8 cuesta 140000 COP por hora.\n4. Si consulta disponibilidad, pide o confirma tipo de cancha, fecha y hora.\n5. Si quiere cancelar, responde que vas a verificar la reserva antes de cancelarla.\n6. Mantén tono amable, claro y natural.\n\nFormato obligatorio:\n{\n  \"intent\": \"\",\n  \"confidence\": 0.0,\n  \"entities\": {\n    \"field_type\": null,\n    \"date\": null,\n    \"time\": null,\n    \"duration_minutes\": null,\n    \"customer_name\": null,\n    \"phone\": null\n  },\n  \"missing_fields\": [],\n  \"bot_response\": \"\",\n  \"should_append\": false\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -1504,
+        448
+      ],
+      "id": "f0d36ea3-670c-4b62-8e0b-94d6903e54fe",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {
+          "temperature": 0,
+          "topP": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -1584,
+        688
+      ],
+      "id": "dc37e859-51d6-4d32-af64-8e82ab1b0010",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "J9UVTH5t4xK7K9bi",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=Session ID: {{ $json.body.sessionId }} ",
+        "contextWindowLength": 7
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -1424,
+        688
+      ],
+      "id": "5c0f0741-26a2-403b-abad-f0a3b48cc7ba",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $('VerificarDisponibilidad').first().json.bot_response,\n  intent: $('VerificarDisponibilidad').first().json.intent,\n  sheet_updated: true,\n  available: true,\n  status: $('VerificarDisponibilidad').first().json.status,\n  field_type: $('VerificarDisponibilidad').first().json.field_type,\n  date: $('VerificarDisponibilidad').first().json.date,\n  time: $('VerificarDisponibilidad').first().json.time,\n  reservation_id: $('VerificarDisponibilidad').first().json.reservation_id\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        544,
+        528
+      ],
+      "id": "fdda5b7f-0464-405e-af31-4660b8ba57c1",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiItem = $input.first().json;\nconst webhookBody = $('Webhook').first().json.body || {};\n\n// ------------------------------\n// 1. Leer respuesta del AI Agent\n// ------------------------------\nlet raw = aiItem.output || aiItem.text || aiItem.response || aiItem;\n\nif (typeof raw !== 'string') {\n  raw = JSON.stringify(raw);\n}\n\nraw = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet ai;\n\ntry {\n  ai = JSON.parse(raw);\n} catch (error) {\n  ai = {\n    intent: \"desconocido\",\n    confidence: 0,\n    entities: {},\n    missing_fields: [\"intent\"],\n    bot_response: \"No pude interpretar bien tu mensaje. ¿Puedes escribirlo de otra forma?\",\n    should_append: false\n  };\n}\n\nconst entities = ai.entities || {};\nconst userMessage = webhookBody.chatInput || \"\";\n\n// ------------------------------\n// 2. Utilidades de normalización\n// ------------------------------\nfunction cleanText(value) {\n  if (value === null || value === undefined) return \"\";\n\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction cleanString(value) {\n  if (value === null || value === undefined) return \"\";\n  return value.toString().trim();\n}\n\nfunction pad2(value) {\n  return value.toString().padStart(2, \"0\");\n}\n\n// ------------------------------\n// 3. Normalizar fecha a YYYY-MM-DD cuando sea posible\n// ------------------------------\nfunction normalizeDate(value) {\n  if (value === null || value === undefined || value === \"\") return \"\";\n\n  const text = value.toString().trim();\n\n  const isoMatch = text.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  if (isoMatch) {\n    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;\n  }\n\n  const numericValue = Number(text.replace(\",\", \".\"));\n  if (!Number.isNaN(numericValue) && numericValue > 20000) {\n    const wholeDays = Math.floor(numericValue);\n    const base = Date.UTC(1899, 11, 30);\n    const dateObj = new Date(base + wholeDays * 24 * 60 * 60 * 1000);\n    return dateObj.toISOString().substring(0, 10);\n  }\n\n  const slashMatch = text.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})$/);\n  if (slashMatch) {\n    const day = pad2(slashMatch[1]);\n    const month = pad2(slashMatch[2]);\n    const year = slashMatch[3];\n    return `${year}-${month}-${day}`;\n  }\n\n  const parsed = new Date(text);\n  if (!Number.isNaN(parsed.getTime())) {\n    return parsed.toISOString().substring(0, 10);\n  }\n\n  return text.substring(0, 10);\n}\n\n// ------------------------------\n// 4. Detectar canchas no existentes\n// Solo existen fútbol 5 y fútbol 8.\n// ------------------------------\nfunction detectUnsupportedFieldNumbers(value, originalMessage) {\n  const combined = `${cleanText(value)} ${cleanText(originalMessage)}`;\n  const numbers = [];\n\n  const regexPatterns = [\n    /\\bfutbol[\\s_]*(\\d{1,2})\\b/g,\n    /\\bcancha\\s*(?:de\\s*)?(\\d{1,2})\\b/g\n  ];\n\n  for (const pattern of regexPatterns) {\n    let match;\n    while ((match = pattern.exec(combined)) !== null) {\n      const number = Number(match[1]);\n      if (!Number.isNaN(number)) numbers.push(number);\n    }\n  }\n\n  const wordToNumber = {\n    \"uno\": 1,\n    \"dos\": 2,\n    \"tres\": 3,\n    \"cuatro\": 4,\n    \"cinco\": 5,\n    \"seis\": 6,\n    \"siete\": 7,\n    \"ocho\": 8,\n    \"nueve\": 9,\n    \"diez\": 10,\n    \"once\": 11,\n    \"doce\": 12\n  };\n\n  const wordPattern = /\\b(?:futbol|cancha)(?:\\s+de)?\\s+(uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\\b/g;\n  let wordMatch;\n  while ((wordMatch = wordPattern.exec(combined)) !== null) {\n    const number = wordToNumber[wordMatch[1]];\n    if (number) numbers.push(number);\n  }\n\n  const uniqueNumbers = [...new Set(numbers)];\n  return uniqueNumbers.filter(number => number !== 5 && number !== 8);\n}\n\n// ------------------------------\n// 5. Normalizar tipo de cancha\n// ------------------------------\nfunction normalizeFieldType(value, originalMessage) {\n  const combined = `${cleanText(value)} ${cleanText(originalMessage)}`;\n\n  if (\n    combined.includes(\"futbol 5\") ||\n    combined.includes(\"futbol5\") ||\n    combined.includes(\"futbol_5\") ||\n    combined.includes(\"cancha de 5\") ||\n    combined.includes(\"cancha 5\") ||\n    combined.includes(\"futbol cinco\") ||\n    combined.includes(\"cancha de cinco\") ||\n    combined.includes(\"la pequena\") ||\n    combined.includes(\"pequena\") ||\n    combined.includes(\"sintetica pequena\")\n  ) {\n    return \"futbol_5\";\n  }\n\n  if (\n    combined.includes(\"futbol 8\") ||\n    combined.includes(\"futbol8\") ||\n    combined.includes(\"futbol_8\") ||\n    combined.includes(\"cancha de 8\") ||\n    combined.includes(\"cancha 8\") ||\n    combined.includes(\"futbol ocho\") ||\n    combined.includes(\"cancha de ocho\") ||\n    combined.includes(\"la mediana\") ||\n    combined.includes(\"mediana\") ||\n    combined.includes(\"la grande\") ||\n    combined.includes(\"grande\") ||\n    combined.includes(\"sintetica grande\")\n  ) {\n    return \"futbol_8\";\n  }\n\n  return \"\";\n}\n\n// ------------------------------\n// 6. Calcular precio\n// ------------------------------\nfunction calculatePrice(fieldType, durationMinutes) {\n  const pricesPerHour = {\n    futbol_5: 90000,\n    futbol_8: 140000\n  };\n\n  const basePrice = pricesPerHour[fieldType] || 0;\n  const duration = Number(durationMinutes) || 60;\n\n  return Math.round(basePrice * (duration / 60));\n}\n\n// ------------------------------\n// 7. Teléfono\n// ------------------------------\nfunction normalizePhone(value) {\n  if (value === null || value === undefined) return \"\";\n\n  const onlyDigits = value.toString().replace(/\\D/g, \"\");\n  const match = onlyDigits.match(/3\\d{9}/);\n\n  if (!match) return \"\";\n\n  return match[0];\n}\n\n// ------------------------------\n// 8. Extraer nombre como respaldo\n// ------------------------------\nfunction extractNameFallback(message) {\n  if (!message) return \"\";\n\n  const patterns = [\n    /soy\\s+([a-záéíóúñ\\s]+?)(?:,|\\.| mi celular| mi telefono| teléfono| telefono| quiero| y quiero| necesito| y necesito| con telefono| con teléfono)/i,\n    /me llamo\\s+([a-záéíóúñ\\s]+?)(?:,|\\.| mi celular| mi telefono| teléfono| telefono| quiero| y quiero| necesito| y necesito| con telefono| con teléfono)/i,\n    /mi nombre es\\s+([a-záéíóúñ\\s]+?)(?:,|\\.| mi celular| mi telefono| teléfono| telefono| quiero| y quiero| necesito| y necesito| con telefono| con teléfono)/i,\n    /a nombre de\\s+([a-záéíóúñ\\s]+?)(?:,|\\.| mi celular| mi telefono| teléfono| telefono| quiero| y quiero| necesito| y necesito| con telefono| con teléfono)/i\n  ];\n\n  for (const pattern of patterns) {\n    const match = message.match(pattern);\n    if (match && match[1]) {\n      return match[1].replace(/\\s+/g, \" \").trim();\n    }\n  }\n\n  return \"\";\n}\n\n// ------------------------------\n// 9. Extraer ID de reserva si aparece\n// ------------------------------\nfunction extractReservationId(message) {\n  if (!message) return \"\";\n\n  const match = message.match(/R-\\d{14,17}-?\\d{0,3}/i);\n\n  if (match) {\n    return match[0].toUpperCase();\n  }\n\n  return \"\";\n}\n\n// ------------------------------\n// 10. Convertir hora a minutos\n// ------------------------------\nfunction timeToMinutes(value) {\n  if (value === null || value === undefined || value === \"\") return null;\n\n  const textRaw = value.toString().trim().replace(\",\", \".\");\n  const numericValue = Number(textRaw);\n\n  if (!Number.isNaN(numericValue)) {\n    if (numericValue > 0 && numericValue < 1) return Math.round(numericValue * 24 * 60);\n    if (numericValue >= 1 && numericValue < 24) return Math.round(numericValue * 60);\n    if (numericValue >= 24) {\n      const fraction = numericValue - Math.floor(numericValue);\n      if (fraction > 0) return Math.round(fraction * 24 * 60);\n      return null;\n    }\n  }\n\n  let text = textRaw.toLowerCase();\n\n  text = text\n    .replace(\"p. m.\", \"pm\")\n    .replace(\"a. m.\", \"am\")\n    .replace(\"p.m.\", \"pm\")\n    .replace(\"a.m.\", \"am\")\n    .replace(/\\s+/g, \" \");\n\n  const match = text.match(/^(\\d{1,2})(?::(\\d{1,2}))?(?::\\d{1,2})?\\s*(am|pm)?$/);\n\n  if (!match) return null;\n\n  let hour = Number(match[1]);\n  const minute = Number(match[2] || 0);\n  const meridian = match[3] || \"\";\n\n  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;\n\n  if (meridian === \"pm\" && hour < 12) hour += 12;\n  if (meridian === \"am\" && hour === 12) hour = 0;\n\n  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;\n\n  return hour * 60 + minute;\n}\n\nfunction minutesToHHMM(minutes) {\n  if (minutes === null || minutes === undefined) return \"\";\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n  return `${pad2(hour)}:${pad2(minute)}`;\n}\n\n// ------------------------------\n// 11. Convertir fecha + hora de Colombia a milisegundos UTC\n// Colombia no maneja horario de verano; UTC-5.\n// ------------------------------\nfunction bogotaDateTimeToUtcMillis(dateText, timeText) {\n  const normalizedDate = normalizeDate(dateText);\n  const minutes = timeToMinutes(timeText);\n\n  if (!normalizedDate || minutes === null) return null;\n\n  const match = normalizedDate.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);\n  if (!match) return null;\n\n  const year = Number(match[1]);\n  const month = Number(match[2]);\n  const day = Number(match[3]);\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n\n  // Hora Colombia + 5 horas = UTC\n  return Date.UTC(year, month - 1, day, hour + 5, minute, 0, 0);\n}\n\nfunction isDateTimeInPast(dateText, timeText) {\n  const utcMillis = bogotaDateTimeToUtcMillis(dateText, timeText);\n  if (utcMillis === null) return false;\n\n  return utcMillis <= Date.now();\n}\n\n// ------------------------------\n// 12. Validar horario de atención\n// Horario permitido para agendar: 07:00 a 23:00.\n// La reserva debe terminar máximo a las 23:00.\n// ------------------------------\nfunction validateBusinessHours(time, durationMinutes) {\n  const OPEN_MINUTES = 7 * 60;\n  const CLOSE_MINUTES = 23 * 60;\n\n  if (!time) {\n    return {\n      valid: true,\n      reason: \"\"\n    };\n  }\n\n  const startMinutes = timeToMinutes(time);\n  const duration = Number(durationMinutes) || 60;\n\n  if (startMinutes === null) {\n    return {\n      valid: false,\n      reason: \"hora_invalida\"\n    };\n  }\n\n  const endMinutes = startMinutes + duration;\n\n  if (startMinutes < OPEN_MINUTES || endMinutes > CLOSE_MINUTES) {\n    return {\n      valid: false,\n      reason: \"fuera_de_horario\"\n    };\n  }\n\n  return {\n    valid: true,\n    reason: \"\"\n  };\n}\n\n// ------------------------------\n// 13. Normalizar datos principales\n// ------------------------------\nconst now = new Date();\nconst createdAt = now.toISOString();\n\nconst intent = cleanString(ai.intent || \"desconocido\");\n\nconst unsupportedFieldNumbers = detectUnsupportedFieldNumbers(\n  entities.field_type,\n  userMessage\n);\n\nconst hasUnsupportedField = unsupportedFieldNumbers.length > 0;\n\nlet fieldType = normalizeFieldType(entities.field_type, userMessage);\n\nif (hasUnsupportedField) {\n  fieldType = \"\";\n}\n\nconst date = normalizeDate(entities.date);\nconst rawTime = cleanString(entities.time);\nconst timeMinutes = timeToMinutes(rawTime);\nconst time = timeMinutes === null ? rawTime : minutesToHHMM(timeMinutes);\nconst duration = Number(entities.duration_minutes || 60);\n\nconst customerName =\n  cleanString(entities.customer_name) ||\n  cleanString(webhookBody.customerName) ||\n  cleanString(webhookBody.customer_name) ||\n  extractNameFallback(userMessage);\n\nconst phone =\n  normalizePhone(entities.phone) ||\n  normalizePhone(webhookBody.phone) ||\n  normalizePhone(userMessage);\n\nconst reservationIdFromUser = extractReservationId(userMessage);\nconst priceCop = calculatePrice(fieldType, duration);\n\nconst businessHoursValidation = validateBusinessHours(time, duration);\nconst isOutsideBusinessHours = businessHoursValidation.valid === false;\nconst isPastReservation = Boolean(\n  intent === \"agendar_cancha\" &&\n  date &&\n  time &&\n  !isOutsideBusinessHours &&\n  isDateTimeInPast(date, time)\n);\n\n// ------------------------------\n// 14. Validación para agendar\n// ------------------------------\nconst missingFields = [];\n\nif (intent === \"agendar_cancha\") {\n  if (!fieldType) missingFields.push(\"field_type\");\n  if (!date) missingFields.push(\"date\");\n  if (!time) missingFields.push(\"time\");\n  if (!customerName) missingFields.push(\"customer_name\");\n  if (!phone) missingFields.push(\"phone\");\n}\n\nconst invalidFields = [];\n\nif (hasUnsupportedField) invalidFields.push(\"field_type\");\nif (isOutsideBusinessHours && intent === \"agendar_cancha\") invalidFields.push(\"time\");\nif (isPastReservation && intent === \"agendar_cancha\") invalidFields.push(\"date\", \"time\");\n\nconst shouldAppend = Boolean(\n  intent === \"agendar_cancha\" &&\n  fieldType &&\n  date &&\n  time &&\n  customerName &&\n  phone &&\n  missingFields.length === 0 &&\n  invalidFields.length === 0\n);\n\n// ------------------------------\n// 15. Validación para cancelar\n// Para cancelar se puede usar:\n// A) reservation_id\n// o\n// B) field_type + date + time + customer_name + phone\n// ------------------------------\nconst missingCancelFields = [];\nconst hasReservationId = Boolean(reservationIdFromUser);\n\nif (intent === \"cancelar_reserva\" && !hasReservationId) {\n  if (!fieldType) missingCancelFields.push(\"field_type\");\n  if (!date) missingCancelFields.push(\"date\");\n  if (!time) missingCancelFields.push(\"time\");\n  if (!customerName) missingCancelFields.push(\"customer_name\");\n  if (!phone) missingCancelFields.push(\"phone\");\n}\n\nconst shouldCancel = Boolean(\n  intent === \"cancelar_reserva\" &&\n  !hasUnsupportedField &&\n  (\n    hasReservationId ||\n    (\n      fieldType &&\n      date &&\n      time &&\n      customerName &&\n      phone &&\n      missingCancelFields.length === 0\n    )\n  )\n);\n\n// ------------------------------\n// 16. Crear ID solo cuando se agenda\n// ------------------------------\nconst newReservationId = shouldAppend\n  ? \"R-\" + now.toISOString().replace(/\\D/g, \"\").slice(0, 17) + \"-\" + Math.floor(Math.random() * 1000).toString().padStart(3, \"0\")\n  : \"\";\n\n// ------------------------------\n// 17. Definir estado interno\n// ------------------------------\nlet status = \"no_aplica\";\n\nif (shouldAppend) {\n  status = \"pendiente_validacion\";\n} else if (shouldCancel) {\n  status = \"pendiente_cancelacion\";\n} else if (hasUnsupportedField) {\n  status = \"cancha_no_existente\";\n} else if (isOutsideBusinessHours && intent === \"agendar_cancha\") {\n  status = \"fuera_de_horario\";\n} else if (isPastReservation && intent === \"agendar_cancha\") {\n  status = \"reserva_en_pasado\";\n}\n\n// ------------------------------\n// 18. Respuesta previa\n// ------------------------------\nlet botResponse = cleanString(ai.bot_response) || \"Solicitud procesada.\";\n\nif (intent === \"agendar_cancha\" && hasUnsupportedField) {\n  const requestedFieldsText = unsupportedFieldNumbers\n    .map(number => `fútbol ${number}`)\n    .join(\", \");\n\n  const missingWithoutFieldType = missingFields.filter(field => field !== \"field_type\");\n\n  botResponse = `Por ahora solo tenemos canchas de fútbol 5 y fútbol 8. No puedo registrar reservas para ${requestedFieldsText}. Por favor indícame si deseas fútbol 5 o fútbol 8.`;\n\n  if (isOutsideBusinessHours) {\n    botResponse += ` Además, el horario disponible es de 7:00 a. m. a 11:00 p. m.; la reserva debe terminar máximo a las 23:00.`;\n  }\n\n  if (missingWithoutFieldType.length > 0) {\n    botResponse += ` También me faltan estos datos: ${missingWithoutFieldType.join(\", \")}.`;\n  }\n} else if (intent === \"agendar_cancha\" && isOutsideBusinessHours) {\n  const missingWithoutTime = missingFields.filter(field => field !== \"time\");\n\n  if (businessHoursValidation.reason === \"hora_invalida\") {\n    botResponse = `La hora indicada no tiene un formato válido. Por favor escribe una hora dentro del horario de atención: de 7:00 a. m. a 11:00 p. m.`;\n  } else {\n    botResponse = `No puedo registrar la reserva a las ${time}. El horario disponible es de 7:00 a. m. a 11:00 p. m.; la reserva debe terminar máximo a las 23:00. Por favor intenta con otra hora dentro del horario.`;\n  }\n\n  if (missingWithoutTime.length > 0) {\n    botResponse += ` Además, me faltan estos datos: ${missingWithoutTime.join(\", \")}.`;\n  }\n} else if (intent === \"agendar_cancha\" && isPastReservation) {\n  const missingWithoutDateTime = missingFields.filter(field => field !== \"date\" && field !== \"time\");\n\n  botResponse = `No puedo registrar una reserva en una fecha u hora que ya pasó. Por favor escoge otra hora futura dentro del horario disponible de 7:00 a. m. a 11:00 p. m.`;\n\n  if (missingWithoutDateTime.length > 0) {\n    botResponse += ` Además, me faltan estos datos: ${missingWithoutDateTime.join(\", \")}.`;\n  }\n} else if (intent === \"agendar_cancha\" && !shouldAppend) {\n  botResponse = `Claro, puedo ayudarte a reservar. Me faltan estos datos: ${missingFields.join(\", \")}.`;\n}\n\nif (shouldAppend) {\n  botResponse = `Perfecto, ${customerName}. Voy a validar disponibilidad para ${fieldType} el ${date} a las ${time}.`;\n}\n\nif (intent === \"cancelar_reserva\" && hasUnsupportedField) {\n  botResponse = `No puedo cancelar una reserva de esa cancha porque solo manejamos canchas de fútbol 5 y fútbol 8.`;\n} else if (intent === \"cancelar_reserva\" && !shouldCancel) {\n  botResponse = `Claro, puedo ayudarte a cancelar la reserva. Por favor indícame el ID de reserva o estos datos: tipo de cancha, fecha, hora, nombre y teléfono. Me faltan: ${missingCancelFields.join(\", \")}.`;\n}\n\nif (shouldCancel) {\n  botResponse = `Voy a buscar la reserva para verificar si se puede cancelar.`;\n}\n\n// ------------------------------\n// 19. Salida hacia los siguientes nodos\n// ------------------------------\nreturn [\n  {\n    json: {\n      reservation_id: shouldAppend ? newReservationId : reservationIdFromUser,\n      session_id: webhookBody.sessionId || \"cliente-web-001\",\n      customer_name: customerName,\n      phone: phone,\n      channel: \"web\",\n      user_message: userMessage,\n      intent: intent,\n      field_type: fieldType,\n      date: date,\n      time: time,\n      duration_minutes: duration,\n      status: status,\n      price_cop: priceCop,\n      created_at: createdAt,\n      notes: botResponse,\n      bot_response: botResponse,\n      should_append: Boolean(shouldAppend),\n      should_cancel: Boolean(shouldCancel),\n      missing_fields: missingFields,\n      missing_cancel_fields: missingCancelFields,\n      invalid_fields: invalidFields,\n      unsupported_field_numbers: unsupportedFieldNumbers,\n      is_past_reservation: Boolean(isPastReservation),\n      business_hours: {\n        open: \"07:00\",\n        close: \"23:00\",\n        valid: businessHoursValidation.valid,\n        reason: businessHoursValidation.reason\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1152,
+        448
+      ],
+      "id": "19edbe90-73ab-43e9-ab44-c50bdb304545",
+      "name": "PrepararFila"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a648f090-aecf-4119-a01b-8ab9f6686fab",
+              "leftValue": "={{ $json.should_append }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -624,
+        528
+      ],
+      "id": "680c8a8b-1517-47d5-a843-b9e6cb48e81d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $json.bot_response,\n  intent: $json.intent,\n  sheet_updated: false,\n  available: false,\n  status: $json.status,\n  field_type: $json.field_type,\n  date: $json.date,\n  time: $json.time,\n  reservation_id: $json.reservation_id\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        352,
+        704
+      ],
+      "id": "d44e720e-bc19-4bca-8909-116a37bb3a3c",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $json.bot_response,\n  intent: $json.intent,\n  sheet_updated: false,\n  available: null,\n  status: $json.status,\n  missing_fields: $json.missing_fields,\n  missing_cancel_fields: $json.missing_cancel_fields || [],\n  invalid_fields: $json.invalid_fields || [],\n  is_past_reservation: $json.is_past_reservation || false\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -272,
+        704
+      ],
+      "id": "ab9a2eb1-35fa-4ca3-a44e-105c16e4a94c",
+      "name": "faltan_datos"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "520109c5-5963-447d-9041-4b18a8f8127d",
+              "leftValue": "={{ $json.is_available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        96,
+        528
+      ],
+      "id": "57cddc20-7290-4135-9b80-77ff40c70013",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY",
+          "mode": "list",
+          "cachedResultName": "Base_Reservas_Canchas_Google_Sheets_WEB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 340349517,
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit#gid=340349517"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reservation_id": "={{ $json.reservation_id }}",
+            "session_id": "={{ $json.session_id }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "phone": "={{ $json.phone }}",
+            "channel": "={{ $json.channel }}",
+            "user_message": "={{ $json.user_message }}",
+            "intent": "={{ $json.intent }}",
+            "field_type": "={{ $json.field_type }}",
+            "date": "={{ $json.date }}",
+            "time": "={{ $json.time }}",
+            "duration_minutes": "={{ $json.duration_minutes }}",
+            "status": "={{ $json.status }}",
+            "price_cop": "={{ $json.price_cop }}",
+            "created_at": "={{ $json.created_at }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "reservation_id",
+              "displayName": "reservation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_message",
+              "displayName": "user_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "field_type",
+              "displayName": "field_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duration_minutes",
+              "displayName": "duration_minutes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price_cop",
+              "displayName": "price_cop",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        336,
+        528
+      ],
+      "id": "a872b9af-3262-4648-9c54-f8f223d47ae0",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aHmbd0yewiDpRXev",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY",
+          "mode": "list",
+          "cachedResultName": "Base_Reservas_Canchas_Google_Sheets_WEB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 340349517,
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit#gid=340349517"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -288,
+        528
+      ],
+      "id": "3f699959-0065-42f1-9487-b6d6572aff0c",
+      "name": "Leer_reservas",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aHmbd0yewiDpRXev",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const nuevaReserva = $('PrepararFila').first().json;\nconst reservasExistentes = $input.all().map(item => item.json);\n\n// ------------------------------\n// 1. Normalizar texto\n// ------------------------------\nfunction normalize(value) {\n  if (value === null || value === undefined) return \"\";\n\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction pad2(value) {\n  return value.toString().padStart(2, \"0\");\n}\n\n// ------------------------------\n// 2. Convertir fecha de Google Sheets o texto a YYYY-MM-DD\n// ------------------------------\nfunction normalizeDate(value) {\n  if (value === null || value === undefined || value === \"\") return \"\";\n\n  const text = value.toString().trim();\n\n  const isoMatch = text.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  if (isoMatch) {\n    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;\n  }\n\n  const numericValue = Number(text.replace(\",\", \".\"));\n  if (!Number.isNaN(numericValue) && numericValue > 20000) {\n    const wholeDays = Math.floor(numericValue);\n    const base = Date.UTC(1899, 11, 30);\n    const date = new Date(base + wholeDays * 24 * 60 * 60 * 1000);\n    return date.toISOString().substring(0, 10);\n  }\n\n  const slashMatch = text.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})$/);\n  if (slashMatch) {\n    const day = pad2(slashMatch[1]);\n    const month = pad2(slashMatch[2]);\n    const year = slashMatch[3];\n    return `${year}-${month}-${day}`;\n  }\n\n  const parsed = new Date(text);\n  if (!Number.isNaN(parsed.getTime())) {\n    return parsed.toISOString().substring(0, 10);\n  }\n\n  return text.substring(0, 10);\n}\n\n// ------------------------------\n// 3. Convertir hora a minutos\n// ------------------------------\nfunction toMinutes(value) {\n  if (value === null || value === undefined || value === \"\") return null;\n\n  const textRaw = value.toString().trim().replace(\",\", \".\");\n  const numericValue = Number(textRaw);\n\n  if (!Number.isNaN(numericValue)) {\n    if (numericValue > 0 && numericValue < 1) return Math.round(numericValue * 24 * 60);\n    if (numericValue >= 1 && numericValue < 24) return Math.round(numericValue * 60);\n    if (numericValue >= 24) {\n      const fraction = numericValue - Math.floor(numericValue);\n      if (fraction > 0) return Math.round(fraction * 24 * 60);\n      return null;\n    }\n  }\n\n  let text = textRaw.toLowerCase();\n\n  text = text\n    .replace(\"p. m.\", \"pm\")\n    .replace(\"a. m.\", \"am\")\n    .replace(\"p.m.\", \"pm\")\n    .replace(\"a.m.\", \"am\")\n    .replace(/\\s+/g, \" \");\n\n  const match = text.match(/^(\\d{1,2})(?::(\\d{1,2}))?(?::\\d{1,2})?\\s*(am|pm)?$/);\n\n  if (!match) return null;\n\n  let hour = Number(match[1]);\n  const minute = Number(match[2] || 0);\n  const meridian = match[3] || \"\";\n\n  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;\n\n  if (meridian === \"pm\" && hour < 12) hour += 12;\n  if (meridian === \"am\" && hour === 12) hour = 0;\n\n  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;\n\n  return hour * 60 + minute;\n}\n\nfunction bogotaDateTimeToUtcMillis(dateText, timeText) {\n  const normalizedDate = normalizeDate(dateText);\n  const minutes = toMinutes(timeText);\n\n  if (!normalizedDate || minutes === null) return null;\n\n  const match = normalizedDate.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);\n  if (!match) return null;\n\n  const year = Number(match[1]);\n  const month = Number(match[2]);\n  const day = Number(match[3]);\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n\n  return Date.UTC(year, month - 1, day, hour + 5, minute, 0, 0);\n}\n\n// ------------------------------\n// 4. Datos de la nueva reserva\n// ------------------------------\nconst nuevaCancha = normalize(nuevaReserva.field_type);\nconst nuevaFecha = normalizeDate(nuevaReserva.date);\nconst nuevaInicio = toMinutes(nuevaReserva.time);\nconst nuevaDuracion = Number(nuevaReserva.duration_minutes || 60);\nconst nuevaFin = nuevaInicio === null ? null : nuevaInicio + nuevaDuracion;\n\n// Seguridad: no guardar reservas en el pasado aunque el nodo anterior falle.\nconst nuevaReservaUtc = bogotaDateTimeToUtcMillis(nuevaReserva.date, nuevaReserva.time);\nif (nuevaReservaUtc !== null && nuevaReservaUtc <= Date.now()) {\n  const mensajePasado = \"No puedo registrar una reserva en una fecha u hora que ya pasó. Por favor escoge otra hora futura dentro del horario disponible.\";\n  return [\n    {\n      json: {\n        ...nuevaReserva,\n        should_append: false,\n        is_available: false,\n        sheet_updated: false,\n        status: \"reserva_en_pasado\",\n        bot_response: mensajePasado,\n        notes: mensajePasado\n      }\n    }\n  ];\n}\n\n// Seguridad: si algo llega mal, no guardar.\nif (!nuevaCancha || !nuevaFecha || nuevaInicio === null) {\n  const mensajeError = \"No pude validar la disponibilidad porque faltan datos de cancha, fecha u hora. Por favor revisa la solicitud.\";\n\n  return [\n    {\n      json: {\n        ...nuevaReserva,\n        should_append: false,\n        is_available: false,\n        sheet_updated: false,\n        status: \"error_validacion\",\n        bot_response: mensajeError,\n        notes: mensajeError\n      }\n    }\n  ];\n}\n\n// ------------------------------\n// 5. Revisar cruce de horarios\n// Solo bloquean reservas con status confirmada.\n// ------------------------------\nconst conflicto = reservasExistentes.find(row => {\n  const rowStatus = normalize(row.status);\n  const rowField = normalize(row.field_type);\n  const rowDate = normalizeDate(row.date);\n  const rowInicio = toMinutes(row.time);\n  const rowDuracion = Number(row.duration_minutes || 60);\n  const rowFin = rowInicio === null ? null : rowInicio + rowDuracion;\n\n  if (rowStatus !== \"confirmada\") return false;\n  if (rowField !== nuevaCancha) return false;\n  if (rowDate !== nuevaFecha) return false;\n  if (rowInicio === null || rowFin === null || nuevaFin === null) return false;\n\n  return nuevaInicio < rowFin && nuevaFin > rowInicio;\n});\n\n// ------------------------------\n// 6. Si está ocupada\n// ------------------------------\nif (conflicto) {\n  const mensajeOcupada = `Cancha no disponible. La cancha ${nuevaReserva.field_type} ya está ocupada el ${nuevaReserva.date} a las ${nuevaReserva.time}. Por favor intenta con otra hora o con otro tipo de cancha.`;\n\n  return [\n    {\n      json: {\n        ...nuevaReserva,\n        should_append: false,\n        is_available: false,\n        sheet_updated: false,\n        status: \"no_disponible\",\n        bot_response: mensajeOcupada,\n        notes: mensajeOcupada\n      }\n    }\n  ];\n}\n\n// ------------------------------\n// 7. Si está libre\n// ------------------------------\nconst mensajeConfirmacion = `Reserva confirmada para ${nuevaReserva.customer_name}. Cancha: ${nuevaReserva.field_type}, fecha: ${nuevaReserva.date}, hora: ${nuevaReserva.time}. Valor: $${Number(nuevaReserva.price_cop).toLocaleString(\"es-CO\")} COP.`;\n\nreturn [\n  {\n    json: {\n      ...nuevaReserva,\n      should_append: true,\n      is_available: true,\n      sheet_updated: true,\n      status: \"confirmada\",\n      bot_response: mensajeConfirmacion,\n      notes: \"Reserva confirmada\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -80,
+        528
+      ],
+      "id": "0d412561-ad95-4046-9f52-7b2fde7cc1ff",
+      "name": "VerificarDisponibilidad"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e4190e72-e010-405c-9984-beff1dc62586",
+              "leftValue": "={{ $json.should_cancel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        448
+      ],
+      "id": "c404657c-b13c-404e-b63e-d0ac83ac9636",
+      "name": "IF_Cancelar_Reserva"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY",
+          "mode": "list",
+          "cachedResultName": "Base_Reservas_Canchas_Google_Sheets_WEB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 340349517,
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit#gid=340349517"
+        },
+        "filtersUI": {
+          "values": []
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -608,
+        128
+      ],
+      "id": "fc5d0eea-4d2f-4c3a-afeb-93d0bbe5aaf9",
+      "name": "Leer Reservas Cancelación",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aHmbd0yewiDpRXev",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const solicitudCancelacion = $('PrepararFila').first().json;\nconst reservasExistentes = $input.all().map(item => item.json);\n\n// ------------------------------\n// 1. Utilidades\n// ------------------------------\nfunction normalize(value) {\n  if (value === null || value === undefined) return \"\";\n\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction onlyDigits(value) {\n  if (value === null || value === undefined) return \"\";\n  return value.toString().replace(/\\D/g, \"\");\n}\n\nfunction pad2(value) {\n  return value.toString().padStart(2, \"0\");\n}\n\nfunction normalizeDate(value) {\n  if (value === null || value === undefined || value === \"\") return \"\";\n\n  const text = value.toString().trim();\n\n  const isoMatch = text.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  if (isoMatch) {\n    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;\n  }\n\n  const numericValue = Number(text.replace(\",\", \".\"));\n  if (!Number.isNaN(numericValue) && numericValue > 20000) {\n    const wholeDays = Math.floor(numericValue);\n    const base = Date.UTC(1899, 11, 30);\n    const dateObj = new Date(base + wholeDays * 24 * 60 * 60 * 1000);\n    return dateObj.toISOString().substring(0, 10);\n  }\n\n  const slashMatch = text.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})$/);\n  if (slashMatch) {\n    const day = pad2(slashMatch[1]);\n    const month = pad2(slashMatch[2]);\n    const year = slashMatch[3];\n    return `${year}-${month}-${day}`;\n  }\n\n  const dateObj = new Date(text);\n  if (!Number.isNaN(dateObj.getTime())) {\n    return dateObj.toISOString().substring(0, 10);\n  }\n\n  return text.substring(0, 10);\n}\n\nfunction toMinutes(value) {\n  if (value === null || value === undefined || value === \"\") return null;\n\n  const textRaw = value.toString().trim().replace(\",\", \".\");\n  const numericValue = Number(textRaw);\n\n  if (!Number.isNaN(numericValue)) {\n    if (numericValue > 0 && numericValue < 1) return Math.round(numericValue * 24 * 60);\n    if (numericValue >= 1 && numericValue < 24) return Math.round(numericValue * 60);\n    if (numericValue >= 24) {\n      const fraction = numericValue - Math.floor(numericValue);\n      if (fraction > 0) return Math.round(fraction * 24 * 60);\n      return null;\n    }\n  }\n\n  let text = textRaw.toLowerCase();\n\n  text = text\n    .replace(\"p. m.\", \"pm\")\n    .replace(\"a. m.\", \"am\")\n    .replace(\"p.m.\", \"pm\")\n    .replace(\"a.m.\", \"am\")\n    .replace(/\\s+/g, \" \");\n\n  const match = text.match(/^(\\d{1,2})(?::(\\d{1,2}))?(?::\\d{1,2})?\\s*(am|pm)?$/);\n\n  if (!match) return null;\n\n  let hour = Number(match[1]);\n  const minute = Number(match[2] || 0);\n  const meridian = match[3] || \"\";\n\n  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;\n\n  if (meridian === \"pm\" && hour < 12) hour += 12;\n  if (meridian === \"am\" && hour === 12) hour = 0;\n\n  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;\n\n  return hour * 60 + minute;\n}\n\nfunction bogotaDateTimeToUtcMillis(dateText, timeText) {\n  const normalizedDate = normalizeDate(dateText);\n  const minutes = toMinutes(timeText);\n\n  if (!normalizedDate || minutes === null) return null;\n\n  const match = normalizedDate.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);\n  if (!match) return null;\n\n  const year = Number(match[1]);\n  const month = Number(match[2]);\n  const day = Number(match[3]);\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n\n  // Hora Colombia + 5 horas = UTC\n  return Date.UTC(year, month - 1, day, hour + 5, minute, 0, 0);\n}\n\nfunction formatTimeFromValue(value) {\n  const minutes = toMinutes(value);\n  if (minutes === null) return value || \"\";\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n  return `${pad2(hour)}:${pad2(minute)}`;\n}\n\n// ------------------------------\n// 2. Datos de la solicitud\n// ------------------------------\nconst reservationIdSolicitado = normalize(solicitudCancelacion.reservation_id);\nconst fieldSolicitado = normalize(solicitudCancelacion.field_type);\nconst dateSolicitada = normalizeDate(solicitudCancelacion.date);\nconst timeSolicitada = toMinutes(solicitudCancelacion.time);\nconst customerSolicitado = normalize(solicitudCancelacion.customer_name);\nconst phoneSolicitado = onlyDigits(solicitudCancelacion.phone);\n\n// ------------------------------\n// 3. Buscar reserva confirmada\n// ------------------------------\nlet reservaEncontrada = null;\n\nfor (const row of reservasExistentes) {\n  const rowStatus = normalize(row.status);\n  const rowReservationId = normalize(row.reservation_id);\n  const rowField = normalize(row.field_type);\n  const rowDate = normalizeDate(row.date);\n  const rowTime = toMinutes(row.time);\n  const rowCustomer = normalize(row.customer_name);\n  const rowPhone = onlyDigits(row.phone);\n\n  if (rowStatus !== \"confirmada\") continue;\n\n  // Si el usuario entregó ID, se busca principalmente por reservation_id.\n  if (reservationIdSolicitado && rowReservationId === reservationIdSolicitado) {\n    reservaEncontrada = row;\n    break;\n  }\n\n  // Si no hay ID, se busca por datos completos.\n  const matchesByData =\n    rowField === fieldSolicitado &&\n    rowDate === dateSolicitada &&\n    rowTime === timeSolicitada &&\n    rowCustomer === customerSolicitado &&\n    rowPhone === phoneSolicitado;\n\n  if (matchesByData) {\n    reservaEncontrada = row;\n    break;\n  }\n}\n\n// ------------------------------\n// 4. Si no se encontró reserva\n// ------------------------------\nif (!reservaEncontrada) {\n  return [\n    {\n      json: {\n        ...solicitudCancelacion,\n        cancel_found: false,\n        cancel_allowed: false,\n        sheet_updated: false,\n        status: \"reserva_no_encontrada\",\n        bot_response: \"No encontré una reserva confirmada con esos datos. Verifica la cancha, fecha, hora, nombre y teléfono.\",\n        notes: \"Intento de cancelación sin coincidencia.\"\n      }\n    }\n  ];\n}\n\n// ------------------------------\n// 5. Validar regla de cancelación: mínimo 1 hora antes del encuentro\n// ------------------------------\nconst reservaUtcMillis = bogotaDateTimeToUtcMillis(reservaEncontrada.date, reservaEncontrada.time);\nconst ahoraUtcMillis = Date.now();\nconst unaHoraMillis = 60 * 60 * 1000;\n\nif (reservaUtcMillis === null) {\n  const mensajeErrorFecha = `Encontré la reserva ${reservaEncontrada.reservation_id}, pero no pude validar correctamente la fecha u hora del encuentro. No se realizó la cancelación.`;\n\n  return [\n    {\n      json: {\n        ...solicitudCancelacion,\n        cancel_found: true,\n        cancel_allowed: false,\n        sheet_updated: false,\n        reservation_id: reservaEncontrada.reservation_id,\n        status: \"error_validacion_cancelacion\",\n        bot_response: mensajeErrorFecha,\n        notes: mensajeErrorFecha\n      }\n    }\n  ];\n}\n\nconst minutosFaltantes = Math.floor((reservaUtcMillis - ahoraUtcMillis) / 60000);\n\nif (reservaUtcMillis - ahoraUtcMillis < unaHoraMillis) {\n  const fechaReserva = normalizeDate(reservaEncontrada.date);\n  const horaReserva = formatTimeFromValue(reservaEncontrada.time);\n  const mensajeNoPermitida = `No se puede cancelar la reserva ${reservaEncontrada.reservation_id}. Las cancelaciones deben hacerse mínimo una hora antes del encuentro. Como no se canceló con una hora de anticipación, se cobrará la cancha.`;\n\n  return [\n    {\n      json: {\n        ...solicitudCancelacion,\n        cancel_found: true,\n        cancel_allowed: false,\n        sheet_updated: false,\n        reservation_id: reservaEncontrada.reservation_id,\n        session_id: reservaEncontrada.session_id || solicitudCancelacion.session_id,\n        customer_name: reservaEncontrada.customer_name || solicitudCancelacion.customer_name,\n        phone: reservaEncontrada.phone || solicitudCancelacion.phone,\n        channel: reservaEncontrada.channel || \"web\",\n        user_message: solicitudCancelacion.user_message,\n        intent: \"cancelar_reserva\",\n        field_type: reservaEncontrada.field_type || solicitudCancelacion.field_type,\n        date: fechaReserva,\n        time: horaReserva,\n        duration_minutes: reservaEncontrada.duration_minutes || solicitudCancelacion.duration_minutes,\n        status: \"cancelacion_no_permitida\",\n        price_cop: reservaEncontrada.price_cop || solicitudCancelacion.price_cop,\n        created_at: reservaEncontrada.created_at || solicitudCancelacion.created_at,\n        minutes_until_reservation: minutosFaltantes,\n        notes: mensajeNoPermitida,\n        bot_response: mensajeNoPermitida\n      }\n    }\n  ];\n}\n\n// ------------------------------\n// 6. Si se encontró reserva y sí cumple la regla de una hora\n// ------------------------------\nconst mensaje = `Cancelación exitosa. La reserva ${reservaEncontrada.reservation_id} quedó cancelada.`;\n\nreturn [\n  {\n    json: {\n      ...solicitudCancelacion,\n      cancel_found: true,\n      cancel_allowed: true,\n      sheet_updated: true,\n      reservation_id: reservaEncontrada.reservation_id,\n      session_id: reservaEncontrada.session_id || solicitudCancelacion.session_id,\n      customer_name: reservaEncontrada.customer_name || solicitudCancelacion.customer_name,\n      phone: reservaEncontrada.phone || solicitudCancelacion.phone,\n      channel: reservaEncontrada.channel || \"web\",\n      user_message: solicitudCancelacion.user_message,\n      intent: \"cancelar_reserva\",\n      field_type: reservaEncontrada.field_type || solicitudCancelacion.field_type,\n      date: normalizeDate(reservaEncontrada.date) || solicitudCancelacion.date,\n      time: formatTimeFromValue(reservaEncontrada.time) || solicitudCancelacion.time,\n      duration_minutes: reservaEncontrada.duration_minutes || solicitudCancelacion.duration_minutes,\n      status: \"cancelada\",\n      price_cop: reservaEncontrada.price_cop || solicitudCancelacion.price_cop,\n      created_at: reservaEncontrada.created_at || solicitudCancelacion.created_at,\n      minutes_until_reservation: minutosFaltantes,\n      notes: mensaje,\n      bot_response: mensaje\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        128
+      ],
+      "id": "b324680b-d445-4348-a573-0e08e064003b",
+      "name": "BuscarReservaCancelar"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "19ab3f9e-aad2-4aaa-a825-7ff51bbb32bc",
+              "leftValue": "={{ $json.cancel_found === true && $json.cancel_allowed === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        128
+      ],
+      "id": "25d304ee-bc96-4ac7-96e9-d6fc1dd25434",
+      "name": "IF_Reserva_Cancelable"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $json.bot_response,\n  intent: $json.intent,\n  sheet_updated: false,\n  available: null,\n  status: $json.status,\n  field_type: $json.field_type,\n  date: $json.date,\n  time: $json.time,\n  reservation_id: $json.reservation_id,\n  cancel_allowed: $json.cancel_allowed || false,\n  minutes_until_reservation: $json.minutes_until_reservation || null\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        16,
+        208
+      ],
+      "id": "e8e4d9b3-c262-489d-942f-8b5692c24afe",
+      "name": "Responder Cancelación No Realizada"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY",
+          "mode": "list",
+          "cachedResultName": "Base_Reservas_Canchas_Google_Sheets_WEB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 340349517,
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit#gid=340349517"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reservation_id": "={{ $json.reservation_id }}",
+            "notes": "={{ $json.notes }}",
+            "status": "={{ $json.status }}"
+          },
+          "matchingColumns": [
+            "reservation_id"
+          ],
+          "schema": [
+            {
+              "id": "reservation_id",
+              "displayName": "reservation_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_message",
+              "displayName": "user_message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "field_type",
+              "displayName": "field_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duration_minutes",
+              "displayName": "duration_minutes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price_cop",
+              "displayName": "price_cop",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f35f08fd-6837-424c-b298-bcecbe54fc27",
+      "name": "Actualizar Estado Cancelada",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aHmbd0yewiDpRXev",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $('BuscarReservaCancelar').first().json.bot_response,\n  intent: $('BuscarReservaCancelar').first().json.intent,\n  sheet_updated: true,\n  available: null,\n  status: $('BuscarReservaCancelar').first().json.status,\n  field_type: $('BuscarReservaCancelar').first().json.field_type,\n  date: $('BuscarReservaCancelar').first().json.date,\n  time: $('BuscarReservaCancelar').first().json.time,\n  reservation_id: $('BuscarReservaCancelar').first().json.reservation_id,\n  cancel_allowed: true,\n  minutes_until_reservation: $('BuscarReservaCancelar').first().json.minutes_until_reservation || null\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        176,
+        0
+      ],
+      "id": "a577c9c4-adf8-4a46-9b9c-58b536b48636",
+      "name": "Responder Cancelación Exitosa"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "=name contains 'Especificaciones_Reserva_Canchas_version_ampliada' and mimeType = 'application/pdf' and trashed = false",
+        "limit": 1,
+        "filter": {
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "webViewLink"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -528,
+        1280
+      ],
+      "id": "e956c3a0-aeb0-497b-bff3-cd59e469e7b4",
+      "name": "Buscar PDF en Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "lKAGMuXimNGX3YX4",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data",
+          "fileName": "Especificaciones_Reserva_Canchas_version_ampliada.pdf"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -304,
+        1280
+      ],
+      "id": "0b076148-fceb-4ac3-b03e-7276f50f558c",
+      "name": "Descargar PDF Info Canchas",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "f7lxttnNBim8eR79",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        1280
+      ],
+      "id": "1e1a86bb-ce06-4a72-bdd1-3f5981fa9c97",
+      "name": "Extraer Texto PDF Canchas"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('PreFiltro FAQ PDF').first().json.body.chatInput }}",
+        "options": {
+          "systemMessage": "=Eres el asistente FAQ de Goles y Troncos, un sistema de reservas de canchas sintéticas en Manizales.\n\nTu tarea es responder preguntas frecuentes usando el contenido extraído del PDF oficial y el contexto conversacional disponible. No respondas de forma robótica ni digas \"voy a consultar\" después de tener el PDF: responde directamente.\n\nReglas importantes:\n1. Responde siempre en español, de forma clara, natural y útil.\n2. Usa como fuente principal el PDF oficial descargado desde Google Drive.\n3. Puedes hacer inferencias prudentes cuando la pregunta sea una variante natural de una política del PDF. Ejemplo: si el PDF habla de parqueadero para bicicletas, motos y carros, entonces puedes responder preguntas como \"¿dónde dejo la cicla?\", \"¿dónde parqueo la moto?\" o \"tenemos dos carros\".\n4. Si el usuario hace una pregunta de seguimiento, usa la memoria conversacional. Ejemplo: si pregunta \"¿ya te había preguntado si había parqueadero?\", responde con naturalidad si ya se habló del tema y resume de nuevo la política.\n5. Si no tienes certeza de si ya lo preguntó, dilo con cuidado y responde igual la información útil: \"No tengo claro si ya lo habíamos hablado, pero te cuento...\".\n6. Si la información exacta no aparece, no inventes datos específicos. En su lugar, usa la información más cercana del PDF y aclara el límite.\n7. Para parqueadero: bicicletas y motos van en la zona vigilada asignada para motos/bicicletas durante la reserva. Para carros hay 1 cupo gratuito por reserva, sujeto a disponibilidad. Carros adicionales dependen de disponibilidad y se consultan en recepción.\n8. Para lockers o bicicleta/moto, recomienda llevar candado, cadena o guaya propia cuando aplique.\n9. Para dos carros, responde que la reserva incluye máximo 1 cupo gratuito para carro, sujeto a disponibilidad, y el segundo carro solo puede ubicarse si recepción confirma espacio disponible.\n10. Para preguntas sobre qué incluye fútbol 5 o fútbol 8, resume implementos y amenidades sin extenderte demasiado.\n\nDevuelve únicamente JSON válido, sin markdown ni texto adicional.\n\nFormato obligatorio:\n{\n  \"reply\": \"\",\n  \"intent\": \"preguntas_frecuentes\",\n  \"sheet_updated\": false,\n  \"available\": null,\n  \"status\": \"faq_pdf\",\n  \"source\": \"pdf_drive\"\n}\n\nPregunta actual del usuario:\n{{ $('PreFiltro FAQ PDF').first().json.body.chatInput }}\n\nTipo de cancha detectado por prefiltro, si existe:\n{{ $('PreFiltro FAQ PDF').first().json.field_type_prefilter || 'no_detectado' }}\n\nContenido extraído del PDF oficial:\n{{ $json.text || $json.data || $json.content || $json.document || JSON.stringify($json) }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        144,
+        1280
+      ],
+      "id": "967988c4-bde3-4af3-8532-4a3961d0f04d",
+      "name": "AI Agent FAQ PDF",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiItem = $input.first().json;\nconst original = $('PreFiltro FAQ PDF').first().json;\n\nlet raw = aiItem.output || aiItem.text || aiItem.response || aiItem;\n\nif (typeof raw !== 'string') {\n  raw = JSON.stringify(raw);\n}\n\nraw = raw.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet parsed;\n\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  parsed = {\n    reply: raw || 'No pude generar una respuesta con la información del PDF oficial.',\n    intent: 'preguntas_frecuentes',\n    sheet_updated: false,\n    available: null,\n    status: 'faq_pdf',\n    source: 'pdf_drive'\n  };\n}\n\nlet reply = parsed.reply || parsed.bot_response || 'No encontré esa información en el documento oficial.';\n\n// Seguridad: si por alguna razón el agente responde que apenas va a consultar,\n// evitamos devolver una respuesta incompleta al usuario.\nconst lowerReply = reply.toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');\nif (lowerReply.includes('voy a consultar') || lowerReply.includes('consultar la informacion oficial')) {\n  reply = 'Ya consulté la información oficial. Puedo ayudarte con implementos, parqueadero, bicicletas, motos, carros, duchas, lockers, iluminación, hidratación, botiquín y políticas de devolución. ¿Sobre cuál de estos temas quieres el detalle?';\n}\n\nreturn [\n  {\n    json: {\n      reply,\n      intent: 'preguntas_frecuentes',\n      sheet_updated: false,\n      available: null,\n      status: parsed.status || 'faq_pdf',\n      source: parsed.source || 'pdf_drive',\n      field_type: original.field_type_prefilter || '',\n      date: '',\n      time: '',\n      reservation_id: ''\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        1280
+      ],
+      "id": "d2fd2454-4878-4336-9195-584c6ae7051b",
+      "name": "Preparar Respuesta FAQ PDF"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $json.reply,\n  intent: $json.intent,\n  sheet_updated: false,\n  available: null,\n  status: $json.status,\n  source: $json.source,\n  field_type: $json.field_type,\n  date: $json.date,\n  time: $json.time,\n  reservation_id: $json.reservation_id\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        592,
+        1280
+      ],
+      "id": "8b1da39b-7034-468a-8ca1-26bed1ba409e",
+      "name": "Responder FAQ PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || {};\nconst userMessage = body.chatInput || \"\";\n\nfunction cleanText(value) {\n  if (value === null || value === undefined) return \"\";\n\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction normalizeFieldType(message) {\n  const text = cleanText(message);\n\n  if (\n    text.includes(\"futbol 5\") ||\n    text.includes(\"futbol5\") ||\n    text.includes(\"cancha de 5\") ||\n    text.includes(\"cancha 5\") ||\n    text.includes(\"futbol cinco\") ||\n    text.includes(\"cancha de cinco\") ||\n    text.includes(\"pequena\") ||\n    text.includes(\"sintetica pequena\")\n  ) {\n    return \"futbol_5\";\n  }\n\n  if (\n    text.includes(\"futbol 8\") ||\n    text.includes(\"futbol8\") ||\n    text.includes(\"cancha de 8\") ||\n    text.includes(\"cancha 8\") ||\n    text.includes(\"futbol ocho\") ||\n    text.includes(\"cancha de ocho\") ||\n    text.includes(\"mediana\") ||\n    text.includes(\"grande\") ||\n    text.includes(\"sintetica grande\")\n  ) {\n    return \"futbol_8\";\n  }\n\n  return \"\";\n}\n\nconst text = cleanText(userMessage);\n\n// Palabras asociadas a la base de conocimiento del PDF.\n// Esta lista fue ampliada para reconocer preguntas naturales y no solo palabras exactas.\nconst faqKeywords = [\n  \"incluye\", \"incluyen\", \"incluido\", \"incluidos\", \"trae\", \"traen\", \"tiene\", \"tienen\",\n  \"implementos\", \"implemento\", \"equipamiento\", \"equipo\", \"petos\", \"peto\", \"chalecos\", \"chaleco\",\n  \"balon\", \"balones\", \"conos\", \"cono\", \"platillos\", \"platillo\", \"cintas\", \"cinta\", \"capitan\",\n  \"cronometro\", \"tablero\", \"camerinos\", \"camerino\", \"duchas\", \"ducha\", \"banos\", \"baños\",\n  \"lockers\", \"locker\", \"casilleros\", \"casillero\", \"hidratacion\", \"agua\", \"botiquin\", \"primeros auxilios\",\n  \"iluminacion\", \"luz\", \"luces\", \"luz nocturna\", \"led\", \"kit\", \"documento\", \"cedula\", \"candado\",\n  \"devolucion\", \"perdida\", \"pierdo\", \"pierde\", \"multa\", \"multas\", \"politica\", \"politicas\",\n  \"servicios incluidos\", \"servicios\", \"amenidades\", \"vestuario\", \"vestuarios\",\n\n  // Parqueadero y movilidad: palabras frecuentes de usuario real.\n  \"parqueadero\", \"parqueo\", \"estacionamiento\", \"estacionar\", \"aparcar\", \"parquear\", \"parquean\",\n  \"carro\", \"carros\", \"coche\", \"coches\", \"vehiculo\", \"vehiculos\", \"automovil\", \"automoviles\",\n  \"moto\", \"motos\", \"motocicleta\", \"motocicletas\", \"bicicleta\", \"bicicletas\", \"cicla\", \"ciclas\", \"bici\", \"bicis\",\n  \"dejar\", \"guardar\", \"donde dejo\", \"donde la dejo\", \"donde lo dejo\", \"donde los dejo\", \"donde las dejo\",\n  \"cupo\", \"cupos\", \"dos carros\", \"varios carros\", \"segundo carro\", \"guaya\", \"cadena\",\n\n  // Preguntas de seguimiento sobre una FAQ anterior.\n  \"ya te habia preguntado\", \"ya te pregunté\", \"ya te pregunte\", \"me dijiste\", \"habíamos hablado\", \"habiamos hablado\"\n];\n\n// Acciones que sí deben pasar al agente principal, porque implican reservar o cancelar.\nconst strongBookingPatterns = [\n  /quiero\\s+(reservar|agendar|apartar|separar)\\b/,\n  /necesito\\s+(reservar|agendar|apartar|separar)\\b/,\n  /deseo\\s+(reservar|agendar|apartar|separar)\\b/,\n  /\\b(cancelar|cancela|anular|borrar)\\b/\n];\n\nconst hasFaqKeyword = faqKeywords.some(keyword => text.includes(cleanText(keyword)));\nconst hasStrongBookingAction = strongBookingPatterns.some(pattern => pattern.test(text));\n\n// Si es una pregunta de información del servicio, va directo al PDF.\n// Esto evita consumir el AI Agent principal y deja la FAQ con una sola llamada de IA.\nconst isPdfFaqCandidate = Boolean(hasFaqKeyword && !hasStrongBookingAction);\n\nreturn [\n  {\n    json: {\n      ...$json,\n      body,\n      user_message: userMessage,\n      normalized_user_message: text,\n      intent_prefilter: isPdfFaqCandidate ? \"preguntas_frecuentes\" : \"\",\n      field_type_prefilter: normalizeFieldType(userMessage),\n      is_faq_pdf_candidate: isPdfFaqCandidate,\n      prefilter_reason: isPdfFaqCandidate\n        ? \"FAQ detectada por palabras clave ampliadas; se envía directo a PDF sin pasar por el AI Agent principal.\"\n        : \"No es FAQ PDF directa; se envía al AI Agent principal.\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        1072
+      ],
+      "id": "f0b354aa-6e62-4da2-8fdb-e1c3482b8356",
+      "name": "PreFiltro FAQ PDF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1d0df747-4c67-4d39-8cb2-31a5c5366420",
+              "leftValue": "={{ $json.is_faq_pdf_candidate }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1296,
+        1248
+      ],
+      "id": "3c96e6f2-1f01-49f6-a102-8e442b32c562",
+      "name": "IF_PreFAQ_PDF"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || {};\nconst userMessage = body.chatInput || \"\";\n\nfunction cleanText(value) {\n  if (value === null || value === undefined) return \"\";\n\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/[¿?¡!.,;]/g, \" \")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nconst text = cleanText(userMessage);\n\n// Preguntas que normalmente hacen referencia a una reserva ya creada.\nconst memoryPatterns = [\n  /\\ba que horas\\b/,\n  /\\bque horas\\b/,\n  /\\bque hora\\b/,\n  /\\ba que hora\\b/,\n  /\\bcual cancha\\b/,\n  /\\bque cancha\\b/,\n  /\\bcuando es\\b/,\n  /\\bpara cuando\\b/,\n  /\\bpara que dia\\b/,\n  /\\bque dia\\b/,\n  /\\bmi reserva\\b/,\n  /\\besa reserva\\b/,\n  /\\bla reserva que hice\\b/,\n  /\\breserva que hice\\b/,\n  /\\breserva que acabo de hacer\\b/,\n  /\\bultima reserva\\b/,\n  /\\bmi ultima reserva\\b/,\n  /\\breserve\\b/,\n  /\\breserve\\b/,\n  /\\breserv[eé]\\b/,\n  /\\bcodigo de reserva\\b/,\n  /\\bcodigo de la reserva\\b/,\n  /\\bid de reserva\\b/,\n  /\\bid de la reserva\\b/,\n  /\\bnumero de reserva\\b/,\n  /\\bnúmero de reserva\\b/,\n  /\\bdatos de la reserva\\b/,\n  /\\bdatos de mi reserva\\b/,\n  /\\bque reservas tengo\\b/,\n  /\\bmis reservas\\b/\n];\n\nconst cancelPatterns = [\n  /\\bcancelar\\b/,\n  /\\bcancela\\b/,\n  /\\bcancelarla\\b/,\n  /\\bcancelala\\b/,\n  /\\banular\\b/,\n  /\\bborrar\\b/\n];\n\nconst newBookingPatterns = [\n  /\\bquiero reservar\\b/,\n  /\\bnecesito reservar\\b/,\n  /\\bdeseo reservar\\b/,\n  /\\bquiero agendar\\b/,\n  /\\bnecesito agendar\\b/,\n  /\\bquiero apartar\\b/,\n  /\\bquiero separar\\b/\n];\n\nconst hasMemoryPattern = memoryPatterns.some(pattern => pattern.test(text));\nconst isCancellation = cancelPatterns.some(pattern => pattern.test(text));\nconst isNewBooking = newBookingPatterns.some(pattern => pattern.test(text));\n\n// Evitamos cruzar con la rama FAQ PDF y con acciones nuevas de reserva/cancelación.\nconst isMemoryQuery = Boolean(\n  hasMemoryPattern &&\n  !isCancellation &&\n  !isNewBooking &&\n  !$json.is_faq_pdf_candidate\n);\n\nreturn [\n  {\n    json: {\n      ...$json,\n      body,\n      user_message: userMessage,\n      is_memory_query: isMemoryQuery,\n      memory_query_reason: isMemoryQuery\n        ? \"Consulta contextual detectada: el usuario pregunta por una reserva anterior de la conversación.\"\n        : \"No es consulta contextual de reserva anterior.\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        992
+      ],
+      "id": "d0014308-c4f2-4a82-bf05-5d1eb5dfb654",
+      "name": "Detectar Consulta Memoria"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "80004df8-9d77-40b7-b53c-5dfe50962ba8",
+              "leftValue": "={{ $json.is_memory_query }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -576,
+        992
+      ],
+      "id": "66b68469-2e81-4545-9d3e-0f6158f25a6b",
+      "name": "IF_Memoria_Conversacional"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY",
+          "mode": "list",
+          "cachedResultName": "Base_Reservas_Canchas_Google_Sheets_WEB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 340349517,
+          "mode": "list",
+          "cachedResultName": "Reservas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KMMlUdXDEJaN2CQumYNZ8knhO8cj8l22etY2px3PvcY/edit#gid=340349517"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -336,
+        976
+      ],
+      "id": "19fd7719-0dc9-45bb-931c-e50e20af2d41",
+      "name": "Leer Reservas Memoria",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aHmbd0yewiDpRXev",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const contexto = $('Detectar Consulta Memoria').first().json;\nconst body = contexto.body || {};\nconst sessionId = body.sessionId || \"cliente-web-001\";\nconst reservas = $input.all().map((item, index) => ({ ...item.json, __index: index }));\n\nfunction normalize(value) {\n  if (value === null || value === undefined) return \"\";\n  return value\n    .toString()\n    .toLowerCase()\n    .normalize(\"NFD\")\n    .replace(/[\\u0300-\\u036f]/g, \"\")\n    .replace(/\\s+/g, \" \")\n    .trim();\n}\n\nfunction pad2(value) {\n  return value.toString().padStart(2, \"0\");\n}\n\nfunction normalizeDate(value) {\n  if (value === null || value === undefined || value === \"\") return \"\";\n\n  const text = value.toString().trim();\n\n  const isoMatch = text.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;\n\n  const numericValue = Number(text.replace(\",\", \".\"));\n  if (!Number.isNaN(numericValue) && numericValue > 20000) {\n    const wholeDays = Math.floor(numericValue);\n    const base = Date.UTC(1899, 11, 30);\n    const dateObj = new Date(base + wholeDays * 24 * 60 * 60 * 1000);\n    return dateObj.toISOString().substring(0, 10);\n  }\n\n  const slashMatch = text.match(/^(\\d{1,2})[\\/\\-](\\d{1,2})[\\/\\-](\\d{4})$/);\n  if (slashMatch) {\n    const day = pad2(slashMatch[1]);\n    const month = pad2(slashMatch[2]);\n    const year = slashMatch[3];\n    return `${year}-${month}-${day}`;\n  }\n\n  const parsed = new Date(text);\n  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().substring(0, 10);\n\n  return text.substring(0, 10);\n}\n\nfunction toMinutes(value) {\n  if (value === null || value === undefined || value === \"\") return null;\n\n  const textRaw = value.toString().trim().replace(\",\", \".\");\n  const numericValue = Number(textRaw);\n\n  if (!Number.isNaN(numericValue)) {\n    if (numericValue > 0 && numericValue < 1) return Math.round(numericValue * 24 * 60);\n    if (numericValue >= 1 && numericValue < 24) return Math.round(numericValue * 60);\n    if (numericValue >= 24) {\n      const fraction = numericValue - Math.floor(numericValue);\n      if (fraction > 0) return Math.round(fraction * 24 * 60);\n      return null;\n    }\n  }\n\n  let text = textRaw.toLowerCase();\n\n  text = text\n    .replace(\"p. m.\", \"pm\")\n    .replace(\"a. m.\", \"am\")\n    .replace(\"p.m.\", \"pm\")\n    .replace(\"a.m.\", \"am\")\n    .replace(/\\s+/g, \" \");\n\n  const match = text.match(/^(\\d{1,2})(?::(\\d{1,2}))?(?::\\d{1,2})?\\s*(am|pm)?$/);\n  if (!match) return null;\n\n  let hour = Number(match[1]);\n  const minute = Number(match[2] || 0);\n  const meridian = match[3] || \"\";\n\n  if (meridian === \"pm\" && hour < 12) hour += 12;\n  if (meridian === \"am\" && hour === 12) hour = 0;\n\n  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;\n  return hour * 60 + minute;\n}\n\nfunction formatTime(value) {\n  const minutes = toMinutes(value);\n  if (minutes === null) return value || \"\";\n  const hour = Math.floor(minutes / 60);\n  const minute = minutes % 60;\n  return `${pad2(hour)}:${pad2(minute)}`;\n}\n\nfunction fieldLabel(value) {\n  const normalized = normalize(value);\n  if (normalized === \"futbol_5\" || normalized === \"futbol 5\") return \"fútbol 5\";\n  if (normalized === \"futbol_8\" || normalized === \"futbol 8\") return \"fútbol 8\";\n  return value || \"cancha no especificada\";\n}\n\nfunction money(value) {\n  const number = Number(value || 0);\n  if (!number) return \"\";\n  return `$${number.toLocaleString(\"es-CO\")} COP`;\n}\n\nfunction rowTimestamp(row) {\n  const created = Date.parse(row.created_at || \"\");\n  if (!Number.isNaN(created)) return created;\n\n  const date = normalizeDate(row.date);\n  const minutes = toMinutes(row.time);\n  if (date && minutes !== null) {\n    const [year, month, day] = date.split(\"-\").map(Number);\n    const hour = Math.floor(minutes / 60);\n    const minute = minutes % 60;\n    return Date.UTC(year, month - 1, day, hour + 5, minute, 0, 0);\n  }\n\n  return row.__index || 0;\n}\n\n// Primero buscamos reservas de la misma sesión.\n// Esto evita responder con reservas de otro usuario.\nconst sameSession = reservas.filter(row => normalize(row.session_id) === normalize(sessionId));\n\n// Priorizamos reservas confirmadas. Si no hay confirmadas, mostramos la última relacionada con esa sesión.\nconst confirmed = sameSession.filter(row => normalize(row.status) === \"confirmada\");\nconst candidates = confirmed.length > 0\n  ? confirmed\n  : sameSession.filter(row => normalize(row.status) !== \"\");\n\nif (candidates.length === 0) {\n  return [\n    {\n      json: {\n        reply: \"Todavía no encuentro una reserva asociada a esta conversación. Puedes hacer una reserva indicando tipo de cancha, fecha, hora, nombre y teléfono.\",\n        intent: \"consultar_memoria_reserva\",\n        sheet_updated: false,\n        available: null,\n        status: \"sin_memoria_reserva\",\n        field_type: \"\",\n        date: \"\",\n        time: \"\",\n        reservation_id: \"\"\n      }\n    }\n  ];\n}\n\nconst latest = candidates\n  .map(row => ({ row, timestamp: rowTimestamp(row) }))\n  .sort((a, b) => b.timestamp - a.timestamp)[0].row;\n\nconst status = normalize(latest.status);\nconst fecha = normalizeDate(latest.date);\nconst hora = formatTime(latest.time);\nconst cancha = fieldLabel(latest.field_type);\nconst valor = money(latest.price_cop);\nconst id = latest.reservation_id || \"\";\nconst nombre = latest.customer_name || \"el nombre registrado\";\n\nlet reply;\n\nif (status === \"confirmada\") {\n  reply = `Tu última reserva confirmada es para cancha de ${cancha}, el ${fecha} a las ${hora}, a nombre de ${nombre}.`;\n  if (valor) reply += ` Valor: ${valor}.`;\n  if (id) reply += ` ID de reserva: ${id}.`;\n} else if (status === \"cancelada\") {\n  reply = `La última reserva asociada a esta conversación aparece cancelada. Era para cancha de ${cancha}, el ${fecha} a las ${hora}, a nombre de ${nombre}.`;\n  if (id) reply += ` ID de reserva: ${id}.`;\n} else {\n  reply = `La última reserva asociada a esta conversación está en estado \"${latest.status}\". Cancha: ${cancha}, fecha: ${fecha}, hora: ${hora}.`;\n  if (id) reply += ` ID de reserva: ${id}.`;\n}\n\nreturn [\n  {\n    json: {\n      reply,\n      intent: \"consultar_memoria_reserva\",\n      sheet_updated: false,\n      available: null,\n      status: status || \"memoria_reserva\",\n      field_type: latest.field_type || \"\",\n      date: fecha,\n      time: hora,\n      reservation_id: id,\n      customer_name: latest.customer_name || \"\",\n      phone: latest.phone || \"\",\n      price_cop: latest.price_cop || \"\",\n      source: \"google_sheets_memoria\",\n      session_id: sessionId\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        976
+      ],
+      "id": "82e501c0-5c72-4987-835a-508a190a9ad1",
+      "name": "Buscar Ultima Reserva Memoria"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  reply: $json.reply,\n  intent: $json.intent,\n  sheet_updated: false,\n  available: $json.available,\n  status: $json.status,\n  field_type: $json.field_type,\n  date: $json.date,\n  time: $json.time,\n  reservation_id: $json.reservation_id,\n  source: $json.source\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        96,
+        976
+      ],
+      "id": "210752af-a388-4a58-aee1-aef49a3e47e6",
+      "name": "Responder Memoria Conversacional"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=Session ID FAQ: {{ $('PreFiltro FAQ PDF').first().json.body.sessionId || 'cliente-web-001' }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        144,
+        1520
+      ],
+      "id": "c4e039bc-bf87-4c72-accc-4b7402c0b56e",
+      "name": "Simple Memory FAQ PDF"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PreFiltro FAQ PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent FAQ PDF",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "PrepararFila",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepararFila": {
+      "main": [
+        [
+          {
+            "node": "IF_Cancelar_Reserva",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Leer_reservas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "faltan_datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer_reservas": {
+      "main": [
+        [
+          {
+            "node": "VerificarDisponibilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VerificarDisponibilidad": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_Cancelar_Reserva": {
+      "main": [
+        [
+          {
+            "node": "Leer Reservas Cancelación",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Reservas Cancelación": {
+      "main": [
+        [
+          {
+            "node": "BuscarReservaCancelar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuscarReservaCancelar": {
+      "main": [
+        [
+          {
+            "node": "IF_Reserva_Cancelable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_Reserva_Cancelable": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Estado Cancelada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder Cancelación No Realizada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Estado Cancelada": {
+      "main": [
+        [
+          {
+            "node": "Responder Cancelación Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar PDF en Drive": {
+      "main": [
+        [
+          {
+            "node": "Descargar PDF Info Canchas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar PDF Info Canchas": {
+      "main": [
+        [
+          {
+            "node": "Extraer Texto PDF Canchas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Texto PDF Canchas": {
+      "main": [
+        [
+          {
+            "node": "AI Agent FAQ PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent FAQ PDF": {
+      "main": [
+        [
+          {
+            "node": "Preparar Respuesta FAQ PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Respuesta FAQ PDF": {
+      "main": [
+        [
+          {
+            "node": "Responder FAQ PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PreFiltro FAQ PDF": {
+      "main": [
+        [
+          {
+            "node": "Detectar Consulta Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_PreFAQ_PDF": {
+      "main": [
+        [
+          {
+            "node": "Buscar PDF en Drive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Consulta Memoria": {
+      "main": [
+        [
+          {
+            "node": "IF_Memoria_Conversacional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF_Memoria_Conversacional": {
+      "main": [
+        [
+          {
+            "node": "Leer Reservas Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF_PreFAQ_PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Reservas Memoria": {
+      "main": [
+        [
+          {
+            "node": "Buscar Ultima Reserva Memoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Ultima Reserva Memoria": {
+      "main": [
+        [
+          {
+            "node": "Responder Memoria Conversacional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory FAQ PDF": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent FAQ PDF",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "75b89246-49f8-4498-ad7e-af07f6ac6b71",
+  "meta": {
+    "instanceId": "aa4f6f182d1d0a4ce0df00dddddb71dda38949299d87b97b37e58b4f7292af33"
+  },
+  "nodeGroups": [],
+  "id": "kTJaw9khCZX00bvO",
+  "tags": []
+}
