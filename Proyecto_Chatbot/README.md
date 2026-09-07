@@ -61,14 +61,12 @@ La solución combina una interfaz en **Streamlit**, comunicación con servicios 
 Proyecto_Chatbot/
 ├── Base_Reservas_Canchas_Google_Sheets_WEB (3).xlsx
 ├── Especificaciones_Reserva_Canchas_version_final (2).pdf
-├── Proyecto_final_PLN (2).ipynb 
-└── Proyecto_final_PLN_(1).json
+└── Proyecto_final_PLN (2).ipynb 
 ```
 
 - **Proyecto_final_PLN (2).ipynb:** notebook principal del proyecto.
 - **Base_Reservas...xlsx:** información utilizada para la gestión de reservas.
 - **Especificaciones...pdf:** documento de referencia con reglas y condiciones del sistema.
-- **Proyecto_final_PLN_(1).json** Archivo del Workflow de n8n.
 
 
 ## Contexto académico y autoría
