@@ -70,13 +70,6 @@ Proyecto_Chatbot/
 - - **Proyecto_final_PLN_(1).json:** workflow de n8n. 
 
 
-## Mejoras recomendadas
-
-- Exportar y añadir al repositorio el workflow de n8n en formato JSON.
-- Añadir una captura o GIF corto del funcionamiento del chatbot.
-- Incluir un archivo `requirements.txt` con las dependencias de Python.
-- Separar el código de la aplicación del notebook si se desea convertir el proyecto en una demo ejecutable.
-
 ## Contexto académico y autoría
 
 Proyecto desarrollado de forma colaborativa en el marco de la formación en Ingeniería Electrónica de la **Universidad Nacional de Colombia - Sede Manizales**.
