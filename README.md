@@ -67,7 +67,7 @@ Proyecto_Chatbot/
 - **Proyecto_final_PLN (2).ipynb:** notebook principal del proyecto.
 - **Base_Reservas...xlsx:** información utilizada para la gestión de reservas.
 - **Especificaciones...pdf:** documento de referencia con reglas y condiciones del sistema.
-- - **Proyecto_final_PLN_(1).json:** workflow de n8n. 
+- **Proyecto_final_PLN_(1).json:** workflow de n8n. 
 
 
 ## Contexto académico y autoría
